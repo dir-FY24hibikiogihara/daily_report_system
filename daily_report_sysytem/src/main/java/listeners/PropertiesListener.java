@@ -1,28 +1,55 @@
 package listeners;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
+import java.util.Properties;
 
-import javax.xml.bind.DatatypeConverter;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
 
+@WebListener
+public class PropertiesListener implements ServletContextListener {
 
-//ハッシュ化処理を行うクラス
-public class EncryptUtil {
-
-    //生のパスワード文字列とpepper文字列を連結した文字列をSHA-256関数でハッシュ化し、返却する
-    public static String getPasswordEncrypt(String plainPass, String pepper) {
-        String ret = "";
-
-        if (plainPass != null && !plainPass.equals("")) {
-            byte[] bytes;
-            String password = plainPass + pepper;
-            try {
-                bytes = MessageDigest.getInstance("SHA-256").digest(password.getBytes());
-                ret = DatatypeConverter.printHexBinary(bytes);
-            } catch (NoSuchAlgorithmException ex) {
-            }
-        }
-
-        return ret;
+    public PropertiesListener() {
     }
+
+    /**
+     * Webアプリケーションのシャットダウン時に実行する処理
+     */
+    public void contextDestroyed(ServletContextEvent arg0) {
+    }
+
+    /**
+     * Webアプリケーションの起動時に実行する処理
+     */
+    public void contextInitialized(ServletContextEvent arg0) {
+        ServletContext context = arg0.getServletContext();
+
+        //プロパティファイルを読み込み、アプリケーションスコープに設定する
+        try {
+            InputStream is = PropertiesListener.class.getClassLoader().getResourceAsStream("application.properties");
+
+            Properties properties = new Properties();
+            properties.load(is);
+            is.close();
+
+            Iterator<String> pit = properties.stringPropertyNames().iterator();
+            while (pit.hasNext()) {
+                String pname = pit.next();
+                context.setAttribute(pname, properties.getProperty(pname));
+
+            }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
